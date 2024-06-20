@@ -1,11 +1,50 @@
-﻿namespace OSK.Parsing.FileTokens.Models
+﻿using System;
+using System.Text;
+
+namespace OSK.Parsing.FileTokens.Models
 {
     public class FileToken
     {
-        public FileTokenType TokenType { get; set; }
+        #region Variables
 
-        public int RawValue { get; set; }
+        public FileTokenType TokenType { get; }
 
-        public string? Value { get; set; }
+        public int[] RawTokens { get; }
+
+        #endregion
+
+        #region Constructors
+
+        internal FileToken(FileTokenType tokenType, params int[] rawValue)
+        {
+            TokenType = tokenType;
+            RawTokens = rawValue ?? throw new ArgumentNullException(nameof(rawValue));
+        }
+
+        #endregion
+
+        #region Helpers
+
+        public override string ToString()
+        {
+            if (RawTokens.Length == 0)
+            {
+                return string.Empty;
+            }
+            if (RawTokens.Length == 1)
+            {
+                return RawTokens[0].AsCharString();
+            }
+
+            var tokenBuilder = new StringBuilder();
+            foreach (var token in RawTokens)
+            {
+                tokenBuilder.Append(token.AsCharString());
+            }
+
+            return tokenBuilder.ToString();
+        }
+
+        #endregion
     }
 }

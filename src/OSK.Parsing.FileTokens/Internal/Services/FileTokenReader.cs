@@ -2,8 +2,9 @@
 using OSK.Parsing.FileTokens.Options;
 using OSK.Parsing.FileTokens.Ports;
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Text;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,10 +14,10 @@ namespace OSK.Parsing.FileTokens.Internal.Services
     {
         #region Variables
 
-        private readonly string _filePath;
-        private readonly FileStream _fileStream;
         private readonly ITokenStateHandler _tokenStateHandler;
         private readonly FileTokenReaderOptions _options;
+
+        internal readonly FileStream _fileStream;
 
         #endregion
 
@@ -24,193 +25,121 @@ namespace OSK.Parsing.FileTokens.Internal.Services
 
         public FileTokenReader(string filePath, ITokenStateHandler tokenStateHandler,
             FileTokenReaderOptions options)
+            : this (File.OpenRead(filePath), tokenStateHandler, options)
         {
-            if (string.IsNullOrWhiteSpace(filePath))
-            {
-                throw new ArgumentException(nameof(filePath));
-            }
-            _filePath = filePath;
+        }
+
+        internal FileTokenReader(FileStream fileStream, ITokenStateHandler tokenStateHandler, FileTokenReaderOptions options)
+        {
             _tokenStateHandler = tokenStateHandler ?? throw new ArgumentNullException(nameof(tokenStateHandler));
             _options = options ?? throw new ArgumentNullException(nameof(options));
-
-            _fileStream = File.OpenRead(filePath);
+            _fileStream = fileStream ?? throw new ArgumentNullException(nameof(fileStream));
         }
 
         #endregion
 
         #region IFileTokenReader
 
-        public string FilePath => _filePath;
+        public string FilePath => _fileStream.Name;
 
-        public async ValueTask<FileToken> ReadToFileTokenEndValueAsync(FileToken fileToken, CancellationToken cancellationToken = default)
+        public async ValueTask<FileToken> ReadToEndTokenAsync(FileToken fileToken, CancellationToken cancellationToken = default)
         {
             if (fileToken == null)
             {
                 throw new ArgumentNullException(nameof(fileToken));
             }
-            if (fileToken.TokenType != FileTokenType.ClosureStart)
+            if (_fileStream.Length == _fileStream.Position)
+            {
+                return new FileToken(FileTokenType.EndOfFile, -1);
+            }
+
+            var endToken = _tokenStateHandler.GetEndToken(new SingleReadToken(fileToken.TokenType, fileToken.RawTokens));
+            if (endToken == null)
             {
                 return fileToken;
             }
-            var targetTokenValue = _tokenStateHandler.GetTokenEndValue(Convert.ToInt16(fileToken.Value)).GetValueOrDefault(-1);
-            if (targetTokenValue == -1)
-            {
-                return fileToken;
-            }
 
-            var iterationsUntilYied = _options.IterationsUntilYield;
-            var identicalFileTokensDiscovered = 0;
-            while (true)
-            {
-                var fileByte = _fileStream!.ReadByte();
-                var tokenState = _tokenStateHandler.GetTokenState(fileByte);
-                if (tokenState.TokenType == FileTokenType.EndOfFile)
-                {
-                    throw new InvalidOperationException("Was not able to read to the file token's end value before reaching the end of the file.");
-                }
-
-                if (tokenState.TokenType == fileToken.TokenType)
-                {
-                    identicalFileTokensDiscovered++;
-                }
-                else if (tokenState.Token == targetTokenValue)
-                {
-                    identicalFileTokensDiscovered--;
-                    if (identicalFileTokensDiscovered <= 0)
-                    {
-                        return tokenState.ToFileToken();
-                    }
-                }
-
-                iterationsUntilYied--;
-                if (iterationsUntilYied <= 0)
-                {
-                    await Task.Yield();
-                    iterationsUntilYied = _options.IterationsUntilYield;
-                }
-            }
+            return await ReadToBytesAsync(fileToken.TokenType, fileToken.RawTokens.ToList(),
+                endToken.Tokens, cancellationToken);
         }
 
         public async ValueTask<FileToken> ReadTokenAsync(CancellationToken cancellationToken = default)
         {
-            if (_fileStream == null)
-            {
-                throw new InvalidOperationException($"Unable to parse a file into tokens when the underlyng file stream has been closed.");
-            }
             if (_fileStream.Length == _fileStream.Position)
             {
-                return new FileToken()
-                {
-                    TokenType = FileTokenType.EndOfFile
-                };
+                return new FileToken(FileTokenType.EndOfFile, -1);
             }
 
-            var tokenState = await GetNextSingleTokenAsync(cancellationToken);
-            return tokenState.ReadState switch
+            var tokenState = await GetNextTokenAsync(cancellationToken);
+            if (tokenState.EndToken == null)
             {
-                TokenReadState.Single => tokenState.ToFileToken(),
-                TokenReadState.Multiple => await ReadMultiStateTokenAsync(tokenState, cancellationToken),
-                _ => throw new InvalidOperationException($"The current read state {tokenState.ReadState} does not have a known conversion to a file token.")
-            };
+                return tokenState.ToFileToken();
+            }
+
+            return await ReadToBytesAsync(tokenState.TokenType, tokenState.Tokens.ToList(), 
+                tokenState.EndToken.Tokens, cancellationToken);
         }
 
         public void Dispose()
         {
-            _fileStream?.Dispose();
+            _fileStream.Dispose();
         }
 
         #endregion
 
         #region Helpers
 
-        private async ValueTask<TokenState> GetNextSingleTokenAsync(CancellationToken cancellationToken)
+        private async ValueTask<TokenState> GetNextTokenAsync(CancellationToken cancellationToken)
         {
             var iterationsUntilYield = _options.IterationsUntilYield;
+            TokenState? previousTokenState = null;
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-
-                var fileByte = _fileStream!.ReadByte();
-                var tokenState = _tokenStateHandler.GetTokenState(fileByte);
-                if (tokenState.TokenType != FileTokenType.Ignore)
-                {
-                    return tokenState;
-                }
-
-                iterationsUntilYield--;
                 if (iterationsUntilYield <= 0)
                 {
                     await Task.Yield();
                     iterationsUntilYield = _options.IterationsUntilYield;
                 }
-            }
-        }
 
-        private async ValueTask<FileToken> ReadMultiStateTokenAsync(TokenState tokenState, CancellationToken cancellationToken)
-        {
-            var tokenBuilder = new StringBuilder();
-            tokenBuilder.Append(tokenState.Token.AsCharString());
+                var fileByte = _fileStream!.ReadByte();
+                iterationsUntilYield--;
 
-            if (tokenState.TokenType == FileTokenType.Text)
-            {
-                var iterationsUntilYield = _options.IterationsUntilYield;
-                while (true)
+                var tokenState = previousTokenState == null
+                    ? _tokenStateHandler.GetInitialTokenState(fileByte)
+                    : _tokenStateHandler.GetNextTokenState(previousTokenState, fileByte);
+
+                if (previousTokenState != null && previousTokenState.TokenType == FileTokenType.Text 
+                     && tokenState.TokenType != FileTokenType.Text)
                 {
-                    var fileByte = _fileStream!.ReadByte();
-                    tokenState = _tokenStateHandler.GetTokenState(fileByte);
-                    if (tokenState.TokenType != FileTokenType.Text)
-                    {
-                        break;
-                    }
-
-                    tokenBuilder.Append(tokenState.Token.AsCharString());
-                    iterationsUntilYield--;
-                    if (iterationsUntilYield <= 0)
-                    {
-                        await Task.Yield();
-                        iterationsUntilYield = _options.IterationsUntilYield;
-                    }
+                    _fileStream.Position--;
+                    return new TokenState(previousTokenState.TokenType, TokenReadState.EndRead, previousTokenState.Tokens); ;
                 }
 
-                _fileStream!.Position--;
-                return new FileToken()
+                switch (tokenState.ReadState)
                 {
-                    TokenType = FileTokenType.Text,
-                    Value = tokenBuilder.ToString(),
-                };
+                    case TokenReadState.SingleRead:
+                    case TokenReadState.EndRead:
+                        if (tokenState.TokenType == FileTokenType.Ignore)
+                        {
+                            continue;
+                        }
+                        return tokenState;
+                    case TokenReadState.ReadNext:
+                        previousTokenState = tokenState;
+                        break;
+                    case TokenReadState.Reset:
+                        if (previousTokenState == null)
+                        {
+                            throw new InvalidOperationException("Unable to reset the token read state when no previous state has been read.");
+                        }
+                        _fileStream.Position = _fileStream.Position - previousTokenState.Tokens.Length - 1;
+                        break;
+                }
             }
-
-            var nextFileByte = _fileStream!.ReadByte();
-            var nextTokenState = _tokenStateHandler.GetTokenState(tokenState, nextFileByte);
-
-            switch (nextTokenState.ReadState)
-            {
-                case TokenReadState.Reset:
-                    _fileStream.Position--;
-                    return tokenState.ToFileToken();
-                case TokenReadState.Single:
-                    tokenBuilder.Append(nextTokenState.Token.AsCharString());
-                    return new FileToken()
-                    {
-                        TokenType = nextTokenState.TokenType,
-                        Value = nextTokenState.TokenType == FileTokenType.NewLine
-                         ? Environment.NewLine
-                         : tokenBuilder.ToString()
-                    };
-                case TokenReadState.Multiple:
-                    if (nextTokenState.ReadToBytes == null)
-                    {
-                        throw new InvalidOperationException("Encountered multiple multi-state tokens in the same process.");
-                    }
-                    tokenBuilder.Append(nextTokenState.Token.AsCharString());
-                    return await ReadToBytesAsync(nextTokenState.TokenType, tokenBuilder,
-                        nextTokenState.ReadToBytes, cancellationToken);
-            }
-
-            throw new InvalidOperationException($"There was an unexpected read state encountered, {nextTokenState.ReadState}, when handling multi-state tokens.");
         }
 
-        private async ValueTask<FileToken> ReadToBytesAsync(FileTokenType tokenType, StringBuilder tokenBuilder, int[] expectedBytes, CancellationToken cancellationToken)
+        private async ValueTask<FileToken> ReadToBytesAsync(FileTokenType tokenType, List<int> tokenBuilder, int[] expectedBytes, CancellationToken cancellationToken)
         {
             var currentMatchingIndex = 0;
             var iterationsUntilYield = _options.IterationsUntilYield;
@@ -219,18 +148,14 @@ namespace OSK.Parsing.FileTokens.Internal.Services
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var fileByte = _fileStream.ReadByte();
-                tokenBuilder.Append(fileByte.AsCharString());
+                tokenBuilder.Add(fileByte);
 
                 if (expectedBytes[currentMatchingIndex] == fileByte)
                 {
                     currentMatchingIndex++;
                     if (currentMatchingIndex >= expectedBytes.Length)
                     {
-                        return new FileToken()
-                        {
-                            TokenType = tokenType,
-                            Value = tokenBuilder.ToString(),
-                        };
+                        return new FileToken(tokenType, tokenBuilder.ToArray());
                     }
                 }
                 else

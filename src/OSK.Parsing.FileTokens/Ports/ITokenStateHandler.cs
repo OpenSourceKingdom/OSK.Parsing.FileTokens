@@ -4,10 +4,10 @@ namespace OSK.Parsing.FileTokens.Ports
 {
     public interface ITokenStateHandler
     {
-        int? GetTokenEndValue(int character);
+        SingleReadToken? GetEndToken(SingleReadToken singleToken);
 
-        TokenState GetTokenState(int character);
+        TokenState GetInitialTokenState(int character);
 
-        TokenState GetTokenState(TokenState previousState, int character);
+        TokenState GetNextTokenState(TokenState previousState, int character);
     }
 }

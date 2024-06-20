@@ -9,7 +9,7 @@ namespace OSK.Parsing.FileTokens.Ports
     {
         string FilePath { get; }
 
-        ValueTask<FileToken> ReadToFileTokenEndValueAsync(FileToken fileToken, CancellationToken cancellationToken = default);
+        ValueTask<FileToken> ReadToEndTokenAsync(FileToken fileToken, CancellationToken cancellationToken = default);
 
         ValueTask<FileToken> ReadTokenAsync(CancellationToken cancellationToken = default);
     }

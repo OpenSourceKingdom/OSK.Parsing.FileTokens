@@ -6,8 +6,5 @@ namespace OSK.Parsing.FileTokens
     {
         public static string AsCharString(this int value)
             => Convert.ToChar(value).ToString();
-
-        public static char AsChar(this int value)
-            => Convert.ToChar(value);
     }
 }

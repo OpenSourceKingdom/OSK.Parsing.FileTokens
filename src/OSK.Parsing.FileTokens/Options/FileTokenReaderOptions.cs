@@ -2,6 +2,6 @@
 {
     public class FileTokenReaderOptions
     {
-        public int IterationsUntilYield { get; set; }
+        public int IterationsUntilYield { get; set; } = 50;
     }
 }
