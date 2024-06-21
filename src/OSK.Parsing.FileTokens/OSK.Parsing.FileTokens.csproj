@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<Nullable>enable</Nullable>
+		<RepositoryUrl>https://github.com/OpenSourceKingdom/OSK.Parsing.FileTokens</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<Description>Provides a .NET mechanism for parsing a variety of language files based on a configuration file for expected tokens to parse.</Description>
+		<PackageTags>OpenSourceKingdom, OpenSource, OSK, parsing, file, token, filetoken, reader, parse</PackageTags>
+		<Authors>BlankDev117</Authors>
+		<Title>OSK.Parsing.FileTokens</Title>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+	</PropertyGroup>
+
+</Project>
