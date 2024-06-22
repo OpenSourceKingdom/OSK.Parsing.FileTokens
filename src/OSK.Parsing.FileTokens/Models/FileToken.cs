@@ -15,7 +15,7 @@ namespace OSK.Parsing.FileTokens.Models
 
         #region Constructors
 
-        internal FileToken(FileTokenType tokenType, params int[] rawValue)
+        public FileToken(FileTokenType tokenType, params int[] rawValue)
         {
             TokenType = tokenType;
             RawTokens = rawValue ?? throw new ArgumentNullException(nameof(rawValue));
