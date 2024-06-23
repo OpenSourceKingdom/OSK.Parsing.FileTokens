@@ -109,13 +109,6 @@ namespace OSK.Parsing.FileTokens.Internal.Services
                     ? _tokenStateHandler.GetInitialTokenState(fileByte)
                     : _tokenStateHandler.GetNextTokenState(previousTokenState, fileByte);
 
-                if (previousTokenState != null && previousTokenState.TokenType == FileTokenType.Text 
-                     && tokenState.TokenType != FileTokenType.Text)
-                {
-                    _fileStream.Position--;
-                    return new TokenState(previousTokenState.TokenType, TokenReadState.EndRead, previousTokenState.Tokens); ;
-                }
-
                 switch (tokenState.ReadState)
                 {
                     case TokenReadState.SingleRead:
@@ -123,6 +116,10 @@ namespace OSK.Parsing.FileTokens.Internal.Services
                         if (tokenState.TokenType == FileTokenType.Ignore)
                         {
                             continue;
+                        }
+                        if (tokenState.TokenType == FileTokenType.Text)
+                        {
+                            _fileStream.Position--;
                         }
                         return tokenState;
                     case TokenReadState.ReadNext:
