@@ -51,8 +51,15 @@ namespace OSK.Parsing.FileTokens
             }
             if (previousState.TokenType == FileTokenType.Text)
             {
-                return GetInitialTokenState(character, 0);
-            }
+                var nextTokenState = GetInitialTokenState(character, 0);
+                var stateChanged = nextTokenState.TokenType != FileTokenType.Text;
+                var characters = stateChanged
+                    ? previousState.Tokens
+                    : previousState.Tokens.Append(character).ToArray();
+                return stateChanged
+                    ? new TokenState(FileTokenType.Text, TokenReadState.EndRead, characters)
+                    : new TokenState(FileTokenType.Text, TokenReadState.ReadNext, characters);
+            } 
             if (previousState.ReadState == TokenReadState.Reset)
             {
                 return GetInitialTokenState(character, previousState.TokenIndex + 1);

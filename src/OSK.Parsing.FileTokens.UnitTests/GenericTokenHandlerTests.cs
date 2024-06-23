@@ -225,12 +225,12 @@ namespace OSK.Parsing.FileTokens.UnitTests
             Assert.Equal(TokenReadState.ReadNext, result.ReadState);
             Assert.Null(result.EndToken);
             Assert.Equal(0, result.TokenIndex);
-            Assert.Single(result.Tokens);
-            Assert.Equal(tokenValue, result.Tokens[0]);
+            Assert.Equal(2, result.Tokens.Length);
+            Assert.Equal((int[])[tokenValue, tokenValue], result.Tokens);
         }
 
         [Fact]
-        public void GetNextTokenState_TextTokenState_FallsBackToInitialMethod_InvalidText()
+        public void GetNextTokenState_TextTokenState_FallsBackToInitialMethod_ReturnsTextTokenWithEndState()
         {
             // Arrange
             var tokenValue = 999;
@@ -239,8 +239,8 @@ namespace OSK.Parsing.FileTokens.UnitTests
             var result = _tokenHandler.GetNextTokenState(new TokenState(FileTokenType.Text, TokenReadState.ReadNext, tokenValue), tokenValue);
 
             // Assert
-            Assert.Equal(FileTokenType.Ignore, result.TokenType);
-            Assert.Equal(TokenReadState.SingleRead, result.ReadState);
+            Assert.Equal(FileTokenType.Text, result.TokenType);
+            Assert.Equal(TokenReadState.EndRead, result.ReadState);
             Assert.Null(result.EndToken);
             Assert.Equal(0, result.TokenIndex);
             Assert.Single(result.Tokens);

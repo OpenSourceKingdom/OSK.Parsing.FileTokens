@@ -1,4 +1,6 @@
 ﻿using OSK.Parsing.FileTokens.Models;
+using System;
+using System.Linq;
 
 namespace OSK.Parsing.FileTokens.Handlers
 {
@@ -39,14 +41,21 @@ namespace OSK.Parsing.FileTokens.Handlers
             new SingleReadToken(FileTokenType.Delimeter, Colon),
             new SingleReadToken(FileTokenType.Delimeter, Tab),
             new SingleReadToken(FileTokenType.Separator, Comma),
+            new SingleReadToken(FileTokenType.NewLine, NewLine),
+            new SingleReadToken(FileTokenType.ClosureStart, OpenParentheses),
+            new SingleReadToken(FileTokenType.ClosureEnd, CloseParentheses),
+            new SingleReadToken(FileTokenType.ClosureStart, OpenBracket),
+            new SingleReadToken(FileTokenType.ClosureEnd, CloseBracket)
         };
 
         private static MultiReadToken[] MultiTokens => new[]
         {
-            new MultiReadToken(new SingleReadToken(FileTokenType.ClosureStart, OpenParentheses),
-                new SingleReadToken(FileTokenType.ClosureEnd, CloseParentheses)),
-            new MultiReadToken(new SingleReadToken(FileTokenType.ClosureStart, OpenBracket),
-                new SingleReadToken(FileTokenType.ClosureEnd, CloseBracket))
+            new MultiReadToken(new SingleReadToken(FileTokenType.Comment, Slash, Slash),
+                new SingleReadToken(FileTokenType.NewLine, Environment.NewLine.Select(c => (int)c).ToArray())),
+            new MultiReadToken(new SingleReadToken(FileTokenType.Comment, Slash, Asterisk),
+                new SingleReadToken(FileTokenType.Comment, Asterisk, Slash)),
+            new MultiReadToken(new SingleReadToken(FileTokenType.NewLine, CarriageReturn), 
+                new SingleReadToken(FileTokenType.NewLine, NewLine))
         };
 
         #endregion
