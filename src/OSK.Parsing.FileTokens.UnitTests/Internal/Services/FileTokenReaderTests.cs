@@ -247,12 +247,11 @@ namespace OSK.Parsing.FileTokens.UnitTests.Internal.Services
                 .Returns(tokens[0]);
 
             var i = 1;
-            var finalTokenState = new TokenState(FileTokenType.Delimeter, TokenReadState.EndRead, 54321);
             _tokenStateHandlerMock.Setup(m => m.GetNextTokenState(It.IsAny<TokenState>(), It.IsAny<int>()))
                 .Returns((TokenState state, int _) =>
                 {
                     var tokenState = i == tokens.Length
-                       ? finalTokenState
+                       ? new TokenState(FileTokenType.Text, TokenReadState.EndRead, state.Tokens)
                        : new TokenState(FileTokenType.Text, TokenReadState.ReadNext, state.Tokens.Append(1).ToArray());
                     i++;
                     return tokenState;
