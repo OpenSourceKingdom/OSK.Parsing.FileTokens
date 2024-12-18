@@ -1,5 +1,8 @@
 ﻿namespace OSK.Parsing.FileTokens.Models
 {
+
+
+
     public enum FileTokenType
     {
         /// <summary>

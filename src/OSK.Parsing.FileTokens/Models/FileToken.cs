@@ -3,6 +3,9 @@ using System.Text;
 
 namespace OSK.Parsing.FileTokens.Models
 {
+    /// <summary>
+    /// An object that represents a token read from a file. The token could be one more characters depending on the token state handler being used.
+    /// </summary>
     public class FileToken
     {
         #region Variables
