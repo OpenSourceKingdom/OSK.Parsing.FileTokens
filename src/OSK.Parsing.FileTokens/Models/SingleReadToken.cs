@@ -2,6 +2,9 @@
 
 namespace OSK.Parsing.FileTokens.Models
 {
+    /// <summary>
+    /// Represents a language syntax token that only needs one token to complete interpretation
+    /// </summary>
     public class SingleReadToken
     {
         #region Variables
@@ -27,6 +30,12 @@ namespace OSK.Parsing.FileTokens.Models
         public bool Matches(SingleReadToken singleToken)
             => Matches(singleToken.Tokens, false);
 
+        /// <summary>
+        /// Checks if the array of characters matches the tokens this read token represents
+        /// </summary>
+        /// <param name="characters">The characters to compare against the language token</param>
+        /// <param name="allowPartialMatch">Whether the match must be exact or partial matches of subarrays are valid. i.e. if we have an array of [1, 2, 3], a partial match is considered valid for subarrays for [1], [1, 2]</param>
+        /// <returns></returns>
         public bool Matches(int[] characters, bool allowPartialMatch)
         {
             if (characters.Length > Tokens.Length)

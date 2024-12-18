@@ -6,13 +6,22 @@
 		<RepositoryUrl>https://github.com/OpenSourceKingdom/OSK.Parsing.FileTokens</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<Description>Provides a .NET mechanism for parsing a variety of language files based on a configuration file for expected tokens to parse.</Description>
-		<PackageTags>OpenSourceKingdom, OpenSource, OSK, parsing, file, token, filetoken, reader, parse</PackageTags>
+		<PackageTags>OpenSourceKingdom, OpenSource, OSK, parsing, file, token, filetoken, reader, parse, configurable, utility, data, load, raw, analysis, project</PackageTags>
 		<Authors>BlankDev117</Authors>
 		<Title>OSK.Parsing.FileTokens</Title>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<NoWarn>CS1591</NoWarn>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<PropertyGroup>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	</PropertyGroup>
 
+	<ItemGroup>
+		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
+		<PackageReference Include="OSK.Hexagonal.MetaData" Version="0.0.1" />
+	</ItemGroup>
+
 </Project>
+		

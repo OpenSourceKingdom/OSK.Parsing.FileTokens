@@ -28,7 +28,7 @@ namespace OSK.Parsing.FileTokens
 
         public SingleReadToken? GetEndToken(SingleReadToken token)
         {
-            if (token == null)
+            if (token is null)
             {
                 return null;
             }
@@ -40,7 +40,7 @@ namespace OSK.Parsing.FileTokens
 
         public TokenState GetInitialTokenState(int character)
         {
-            return GetInitialTokenState(character, 0);
+            return GetTokenState(character, 0);
         }
 
         public virtual TokenState GetNextTokenState(TokenState previousState, int character)
@@ -51,7 +51,7 @@ namespace OSK.Parsing.FileTokens
             }
             if (previousState.TokenType == FileTokenType.Text)
             {
-                var nextTokenState = GetInitialTokenState(character, 0);
+                var nextTokenState = GetTokenState(character, 0);
                 var stateChanged = nextTokenState.TokenType != FileTokenType.Text;
                 var characters = stateChanged
                     ? previousState.Tokens
@@ -62,7 +62,7 @@ namespace OSK.Parsing.FileTokens
             } 
             if (previousState.ReadState == TokenReadState.Reset)
             {
-                return GetInitialTokenState(character, previousState.TokenIndex + 1);
+                return GetTokenState(character, previousState.TokenIndex + 1);
             }
             if (previousState.ReadState != TokenReadState.ReadNext)
             {
@@ -103,7 +103,18 @@ namespace OSK.Parsing.FileTokens
 
         #region Helpers
 
-        protected virtual TokenState GetInitialTokenState(int character, int tokenIndex)
+        /// <summary>
+        /// Gets the token state represented by the byte character read.
+        /// </summary>
+        /// <param name="character">The byte character read in from the stream</param>
+        /// <param name="tokenIndex">
+        /// The index of the current path. This is used to allow the file token parser the ability to attempt to continue parsing a token state if a given path fails and there are other potential state options.
+        /// For example, if there are a couple of multi-read tokens, with start tokens that look like '/*' and '/+', the token index passed in on the first read would be 0. If the token state returned gives a start
+        /// token expectation for '/*' on the first attempt but the actual token is '/*', the file token parser will reset and proceed to the next available multi-read token and pass in 1. In this way, the token index
+        /// can help to check all potential token states available for a given token sequence.
+        /// </param>
+        /// <returns>The <see cref="TokenState"/> represented by the current character read and token index provided</returns>
+        protected virtual TokenState GetTokenState(int character, int tokenIndex)
         {
             var tokenArray = new int[] { character };
             var singleToken = _singleTokens

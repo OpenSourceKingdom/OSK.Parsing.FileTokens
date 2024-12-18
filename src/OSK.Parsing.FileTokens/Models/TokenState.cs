@@ -3,6 +3,9 @@ using System.Linq;
 
 namespace OSK.Parsing.FileTokens.Models
 {
+    /// <summary>
+    /// Represents the state of a currently in-process token being read. 
+    /// </summary>
     public class TokenState
     {
         #region Variables
@@ -15,6 +18,10 @@ namespace OSK.Parsing.FileTokens.Models
 
         public SingleReadToken? EndToken { get; }
 
+        /// <summary>
+        /// This is an internal field for the current implementation of <see cref="Ports.IFileTokenReader"/> to use to keep track of
+        /// the current index that a token is being read for <see cref="GenericTokenStateHandler.GetTokenState(int, int)"/>
+        /// </summary>
         internal int TokenIndex { get; set; }
 
         #endregion

@@ -50,6 +50,8 @@ namespace OSK.Parsing.FileTokens.UnitTests.Internal.Services
 
         public void Dispose()
         {
+            GC.SuppressFinalize(this);
+
             _fileTokenReader.Dispose();
             if (Directory.Exists(_testDirectory))
             {
@@ -221,7 +223,7 @@ namespace OSK.Parsing.FileTokens.UnitTests.Internal.Services
                      ? new TokenState(FileTokenType.Comment, TokenReadState.Reset, 1, 2, 3)
                      : i > tokens.Length
                        ? finalTokenState
-                       : new TokenState(FileTokenType.Comment, TokenReadState.ReadNext, state.Tokens.Append(1).ToArray());
+                       : new TokenState(FileTokenType.Comment, TokenReadState.ReadNext, [.. state.Tokens, 1]);
                     i++;
                     return tokenState;
                 });
@@ -252,7 +254,7 @@ namespace OSK.Parsing.FileTokens.UnitTests.Internal.Services
                 {
                     var tokenState = i == tokens.Length
                        ? new TokenState(FileTokenType.Text, TokenReadState.EndRead, state.Tokens)
-                       : new TokenState(FileTokenType.Text, TokenReadState.ReadNext, state.Tokens.Append(1).ToArray());
+                       : new TokenState(FileTokenType.Text, TokenReadState.ReadNext, [.. state.Tokens, 1]);
                     i++;
                     return tokenState;
                 });
