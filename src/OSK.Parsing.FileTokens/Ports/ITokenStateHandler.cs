@@ -6,7 +6,7 @@ namespace OSK.Parsing.FileTokens.Ports
     /// <summary>
     /// A token state handler provides the types of tokens being read from a file stream based on the bytes being read.
     /// </summary>
-    [HexagonalPort(HexagonalPort.Secondary)]
+    [HexagonalIntegration(HexagonalIntegrationType.IntegrationOptional)]
     public interface ITokenStateHandler
     {
         /// <summary>
