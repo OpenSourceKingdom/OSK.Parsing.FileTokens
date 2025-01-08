@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace OSK.Parsing.FileTokens.Ports
 {
-    [HexagonalPort(HexagonalPort.Primary)]
+    [HexagonalIntegration(HexagonalIntegrationType.LibraryProvided)]
     public interface IFileTokenReader : IDisposable
     {
         /// <summary>
